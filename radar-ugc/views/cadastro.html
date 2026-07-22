@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar conta — Radar UGC</title>
+<link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <a href="/" class="auth-logo"><span class="dot"></span>radar<span class="accent">.</span>ugc</a>
+
+  <div class="auth-card">
+    <h1>Criar sua conta</h1>
+    <p class="auth-sub">Grátis. Leva menos de um minuto.</p>
+
+    <form id="formCadastro">
+      <label>Tipo de conta</label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn active" data-tipo="criador">Sou criador(a)</button>
+        <button type="button" class="toggle-btn" data-tipo="empresa">Sou empresa</button>
+      </div>
+      <input type="hidden" id="tipo" value="criador">
+
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" required placeholder="Seu nome completo">
+
+      <label for="email">E-mail</label>
+      <input type="email" id="email" required placeholder="seu@email.com">
+
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" required minlength="6" placeholder="Mínimo 6 caracteres">
+
+      <div id="nichosBlock">
+        <label>Seus nichos (escolha um ou mais)</label>
+        <div class="chip-group" id="chipGroup">
+          <button type="button" class="chip" data-nicho="beleza">Beleza</button>
+          <button type="button" class="chip" data-nicho="fitness">Fitness</button>
+          <button type="button" class="chip" data-nicho="tech">Tech</button>
+          <button type="button" class="chip" data-nicho="infantil">Infantil</button>
+          <button type="button" class="chip" data-nicho="casa">Casa</button>
+          <button type="button" class="chip" data-nicho="moda">Moda</button>
+          <button type="button" class="chip" data-nicho="alimentação">Alimentação</button>
+        </div>
+      </div>
+
+      <div class="error" id="erroMsg"></div>
+
+      <button type="submit" class="btn-submit" id="btnSubmit">Criar conta grátis</button>
+    </form>
+
+    <p class="auth-footer">Já tem conta? <a href="/login">Entrar</a></p>
+  </div>
+</div>
+
+<script>
+  const tipoInput = document.getElementById('tipo');
+  const nichosBlock = document.getElementById('nichosBlock');
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoInput.value = btn.dataset.tipo;
+      nichosBlock.style.display = btn.dataset.tipo === 'empresa' ? 'none' : 'block';
+    });
+  });
+
+  const nichosSelecionados = new Set();
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active');
+      const n = chip.dataset.nicho;
+      nichosSelecionados.has(n) ? nichosSelecionados.delete(n) : nichosSelecionados.add(n);
+    });
+  });
+
+  const form = document.getElementById('formCadastro');
+  const erroMsg = document.getElementById('erroMsg');
+  const btnSubmit = document.getElementById('btnSubmit');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    erroMsg.textContent = '';
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Criando conta...';
+
+    try {
+      const resp = await fetch('/api/auth/cadastro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: document.getElementById('nome').value,
+          email: document.getElementById('email').value,
+          senha: document.getElementById('senha').value,
+          tipo: tipoInput.value,
+          nichos: Array.from(nichosSelecionados)
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Não foi possível criar a conta.');
+      window.location.href = data.redirect || '/dashboard';
+    } catch (err) {
+      erroMsg.textContent = err.message;
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Criar conta grátis';
+    }
+  });
+</script>
+</body>
+</html>

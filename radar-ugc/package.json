@@ -1,0 +1,25 @@
+{
+  "name": "radar-ugc",
+  "version": "1.0.0",
+  "description": "SaaS que rastreia vagas e permutas de conteudo UGC e entrega num painel com login",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "scrape": "node scraper/scraper.js",
+    "seed": "node db/seed.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "rss-parser": "^3.13.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

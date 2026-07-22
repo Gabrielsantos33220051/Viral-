@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Radar UGC</title>
+<link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+<header>
+  <nav class="wrap">
+    <a href="/" class="logo"><span class="dot"></span>radar<span class="accent">.</span>ugc</a>
+    <div class="nav-right">
+      <span class="plano-badge" id="planoBadge">carregando...</span>
+      <button id="btnSair" class="btn-ghost">Sair</button>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Vagas de hoje</h1>
+      <p id="saudacao" class="subtitle">Carregando suas vagas...</p>
+    </div>
+    <span class="live-tag"><span class="dot-pulse"></span>rastreamento ativo</span>
+  </div>
+
+  <div id="upgradeBanner" class="upgrade-banner" style="display:none;">
+    Você está no plano <strong>Free</strong>: vê só 5 vagas por semana, com 24-48h de atraso.
+    <a href="#" id="linkUpgrade">Ver plano Pro →</a>
+  </div>
+
+  <div id="listaVagas" class="jobs-grid"></div>
+
+  <div id="estadoVazio" class="empty-state" style="display:none;">
+    <p>Ainda não há vagas ativas no radar.</p>
+    <p class="empty-sub">O robô roda a cada 3 horas — volte em breve ou ajuste seus nichos no cadastro.</p>
+  </div>
+</main>
+
+<script>
+  const listaVagas = document.getElementById('listaVagas');
+  const estadoVazio = document.getElementById('estadoVazio');
+  const planoBadge = document.getElementById('planoBadge');
+  const saudacao = document.getElementById('saudacao');
+  const upgradeBanner = document.getElementById('upgradeBanner');
+
+  const NICHO_LABEL = {
+    beleza:'Beleza', fitness:'Fitness', tech:'Tech', infantil:'Infantil',
+    casa:'Casa', moda:'Moda', alimentação:'Alimentação', geral:'Geral'
+  };
+
+  function cardVaga(vaga){
+    const div = document.createElement('article');
+    div.className = 'job-card';
+    const paga = vaga.tipo_remuneracao === 'pago';
+    div.innerHTML = `
+      <div class="job-top">
+        <span class="job-tag">${NICHO_LABEL[vaga.nicho] || vaga.nicho}</span>
+        <span class="job-pay ${paga ? 'pago' : ''}">${vaga.tipo_remuneracao === 'permuta' ? 'Permuta' : (vaga.valor_estimado || 'A combinar')}</span>
+      </div>
+      <h3>${vaga.titulo}</h3>
+      <p class="job-desc">${vaga.descricao || 'Sem descrição detalhada — veja o link original.'}</p>
+      <div class="job-bottom">
+        <span class="job-source">${vaga.fonte}</span>
+        ${vaga.link_original ? `<a href="${vaga.link_original}" target="_blank" rel="noopener" class="job-link">Ver vaga →</a>` : ''}
+      </div>
+    `;
+    return div;
+  }
+
+  async function carregar(){
+    try {
+      const meResp = await fetch('/api/auth/me');
+      if (meResp.status === 401) { window.location.href = '/login'; return; }
+      const { usuario } = await meResp.json();
+      saudacao.textContent = `Olá, ${usuario.nome.split(' ')[0]} — aqui estão as vagas encontradas.`;
+      planoBadge.textContent = usuario.plano === 'free' ? 'Plano Free' : (usuario.plano === 'pro' ? 'Plano Pro' : 'Plano Empresa');
+      if (usuario.plano === 'free') upgradeBanner.style.display = 'flex';
+
+      const jobsResp = await fetch('/api/jobs');
+      const { vagas } = await jobsResp.json();
+
+      if (!vagas.length) {
+        estadoVazio.style.display = 'block';
+        return;
+      }
+      vagas.forEach(v => listaVagas.appendChild(cardVaga(v)));
+    } catch (err) {
+      saudacao.textContent = 'Não foi possível carregar suas vagas agora. Recarregue a página.';
+    }
+  }
+  carregar();
+
+  document.getElementById('btnSair').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/';
+  });
+</script>
+</body>
+</html>
